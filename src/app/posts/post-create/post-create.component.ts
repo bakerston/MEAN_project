@@ -14,9 +14,11 @@ import { PostsService } from "../posts.service";
 export class PostCreateComponent implements OnInit {
     enteredTitle = '';
     enteredContent = '';
+    post: Post;
+    isLoading = false;
     private mode = 'create';
     private postId: string;
-    private post: Post;
+    
     //@Output() postCreated = new EventEmitter<Post>();
     
     constructor(public postsService: PostsService, public route: ActivatedRoute){};
@@ -26,7 +28,11 @@ export class PostCreateComponent implements OnInit {
             if (paramMap.has('postId')) {
                 this.mode = 'edit';
                 this.postId = paramMap.get('postId');
-                this.post = this.postsService.getPost(this.postId);
+                this.isLoading = true;
+                this.postsService.getPost(this.postId).subscribe(postData => {
+                    this.isLoading = false;
+                    this.post = {id: postData._id, title: postData.title, content: postData.content};
+                });
             } else {
                 this.mode = 'create';
                 this.postId = null;
@@ -34,11 +40,17 @@ export class PostCreateComponent implements OnInit {
         });
     }
 
-    onAddPost(form: NgForm) {
+    onSavePost(form: NgForm) {
         if (form.invalid){
             return;
         }
-        this.postsService.addPost(form.value.title, form.value.content);
+        this.isLoading = true;
+        if (this.mode == 'create'){
+            this.postsService.addPost(form.value.title, form.value.content);
+        }
+        else{
+            this.postsService.updatePost(this.postId,form.value.title, form.value.conent);
+        };
         form.resetForm();
     }
 }
